@@ -11,6 +11,7 @@ from .corpus import filter_rows_by_source
 from .corpus import matching_decisions
 from .corpus import rank_rows
 from .corpus import chunk_warnings
+from .embeddings import embed_text
 from .runtime import classify_relative_path
 from .runtime import content_hash
 from .runtime import hook_status
@@ -19,6 +20,7 @@ from .runtime import resolve_allowlisted_path
 from .runtime import runtime_paths
 from .store import has_index
 from .store import load_rows
+from .store import vector_search as store_vector_search
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PATHS = runtime_paths(REPO_ROOT)
@@ -68,14 +70,25 @@ def rebuild() -> dict[str, object]:
 
 
 @mcp.tool
-def search(query: str, limit: int = 8) -> dict[str, object]:
+def search(query: str, limit: int = 8, mode: str = "hybrid") -> dict[str, object]:
     if not has_index(PATHS):
         return index_unavailable()
-    rows = load_rows(PATHS)
-    results = rank_rows(rows, query, limit)
+
+    if mode == "lexical":
+        rows = load_rows(PATHS)
+        results = rank_rows(rows, query, limit)
+    elif mode == "semantic":
+        query_vec = embed_text(query)
+        results = store_vector_search(PATHS, query_vec, limit=limit)
+    else:
+        from .cli import hybrid_search
+        rows = load_rows(PATHS)
+        results = hybrid_search(PATHS, rows, query, limit)
+
     return {
         "ok": True,
         "query": query,
+        "mode": mode,
         "results": results,
         "result_count": len(results),
     }

@@ -22,6 +22,15 @@ def replace_chunks(paths: RuntimePaths, chunks: list[ChunkRecord]) -> int:
     return len(rows)
 
 
+def replace_chunks_with_vectors(
+    paths: RuntimePaths,
+    rows: list[dict[str, object]],
+) -> int:
+    db = connect(paths)
+    db.create_table(TABLE_NAME, data=rows, mode="overwrite")
+    return len(rows)
+
+
 def has_index(paths: RuntimePaths) -> bool:
     try:
         db = connect(paths)
@@ -40,6 +49,26 @@ def load_rows(paths: RuntimePaths) -> list[dict[str, object]]:
 def row_count(paths: RuntimePaths) -> int:
     if not has_index(paths):
         return 0
+    return len(load_rows(paths))
+
+
+def vector_search(
+    paths: RuntimePaths,
+    query_vector: list[float],
+    limit: int = 10,
+) -> list[dict[str, object]]:
     db = connect(paths)
-    table = db.open_table(TABLE_NAME)
-    return table.count_rows()
+    try:
+        table = db.open_table(TABLE_NAME)
+    except Exception:
+        return []
+    try:
+        results = (
+            table.search(query_vector, vector_column_name="vector")
+            .limit(limit)
+            .to_arrow()
+            .to_pylist()
+        )
+        return results
+    except Exception:
+        return []
