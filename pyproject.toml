@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-infra-project-context"
+version = "0.1.0"
+description = "Local docs-first project-context MCP for agentic-infra."
+requires-python = ">=3.10"
+dependencies = [
+  "fastmcp==3.2.4",
+  "lancedb==0.30.2",
+]

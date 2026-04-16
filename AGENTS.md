@@ -55,7 +55,7 @@ Detailed workflow lives in `.genai/rules/decision-records.md`.
 
 - Markdown for maps, rules, commands, and design/governance docs
 - Python for the template control plane and hook logic
-- FastMCP for the local docs-first `project-context` MCP runtime
+- FastMCP + LanceDB for the local docs-first `project-context` MCP runtime
 - JSON and YAML for editor config and filter examples
 - Cursor and Claude Code as the primary editor integrations
 

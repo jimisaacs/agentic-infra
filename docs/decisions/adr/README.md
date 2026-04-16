@@ -26,3 +26,4 @@ Name files `ADR-xxxx-short-slug.md` and add every new ADR back to the index belo
 |---|---|---|---|---|
 | `ADR-0001` | `accepted` | Derive agent memory from git-tracked canonical sources and never treat generated retrieval artifacts as canonical. | `memory`, `git`, `provenance` | [record](ADR-0001-git-derived-agent-memory.md), [design](../../design/git-derived-memory.md) |
 | `ADR-0002` | `accepted` | Provide a built-in local project-context MCP as the primary self-query interface, with shared platform MCP services remaining optional overlays. | `mcp`, `retrieval`, `workflow` | [record](ADR-0002-project-context-mcp.md), [design](../../design/project-context-mcp.md) |
+| `ADR-0003` | `accepted` | Use LanceDB as the local derived-memory backend for this repo's docs-first `project-context` v1 implementation. | `storage`, `retrieval`, `v1` | [record](ADR-0003-lancedb-for-project-context-v1.md), [design](../../design/git-derived-memory.md) |
