@@ -1,0 +1,6 @@
+---
+description: "Docker Compose stack architecture, service wiring, ./dev stack commands"
+globs: ["project/stack/**", "**/Dockerfile", "**/compose.yml", "**/nginx.conf"]
+---
+
+@.genai/rules/stack.md

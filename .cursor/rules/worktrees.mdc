@@ -1,0 +1,6 @@
+---
+description: "Worktree execution model, home-checkout Graphite flow, and port offsets"
+alwaysApply: false
+---
+
+@.genai/rules/worktrees.md

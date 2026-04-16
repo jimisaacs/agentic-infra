@@ -1,0 +1,27 @@
+name: "git-log"
+version: 1
+description: "Compact recent git history for agent context"
+
+match:
+  command: "git"
+  subcommand: "log"
+  exclude_flags: ["-p", "--patch", "--stat", "--format", "--pretty", "--oneline", "--graph"]
+
+inject:
+  args: ["--oneline", "-20"]
+  skip_if_present: ["--oneline", "--format", "--pretty", "-p", "--patch", "--stat"]
+
+streams: ["stdout"]
+
+pipeline:
+  - action: "strip_ansi"
+  - action: "keep_lines"
+    pattern: "\\S"
+  - action: "truncate_lines"
+    max: 120
+    ellipsis: "..."
+  - action: "head"
+    n: 25
+    overflow_msg: "+{remaining} more commits — use git log --oneline -N for more"
+
+on_error: "passthrough"

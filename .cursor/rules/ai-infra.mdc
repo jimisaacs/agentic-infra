@@ -1,0 +1,6 @@
+---
+description: "Token economy, drift prevention, self-maintenance for AI infrastructure"
+globs: [".cursor/**", ".claude/**", ".genai/**", "AGENTS.md", "CLAUDE.md"]
+---
+
+@.genai/rules/ai-infra.md

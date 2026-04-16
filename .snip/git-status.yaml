@@ -1,0 +1,24 @@
+name: "git-status"
+version: 1
+description: "Compact git status for agent context"
+
+match:
+  command: "git"
+  subcommand: "status"
+  exclude_flags: ["-v", "--long", "--porcelain", "-s", "--short"]
+
+inject:
+  args: ["--short", "--branch"]
+  skip_if_present: ["--porcelain", "-s", "--short"]
+
+streams: ["stdout"]
+
+pipeline:
+  - action: "strip_ansi"
+  - action: "keep_lines"
+    pattern: "\\S"
+  - action: "head"
+    n: 40
+    overflow_msg: "+{remaining} more files — use git status --porcelain for the full list"
+
+on_error: "passthrough"

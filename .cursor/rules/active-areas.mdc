@@ -1,0 +1,6 @@
+---
+description: "Check for parallel agent conflicts before modifying files. Load when about to modify 3+ files in a major component."
+alwaysApply: false
+---
+
+@.genai/rules/active-areas.md

@@ -1,0 +1,6 @@
+---
+description: "Go conventions for the Pulse worked-example app"
+globs: ["*.go", "project/go/**"]
+---
+
+@.genai/rules/go.md

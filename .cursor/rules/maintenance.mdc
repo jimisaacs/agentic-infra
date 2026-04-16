@@ -1,0 +1,6 @@
+---
+description: "File size discipline, SSOT, update protocol, deferred-code policy. Load when finishing changes or when a file is getting large."
+alwaysApply: false
+---
+
+@.genai/rules/maintenance.md

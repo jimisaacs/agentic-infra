@@ -1,0 +1,6 @@
+---
+description: "TODO taxonomy, format, lifecycle for code TODOs"
+globs: ["**/*.go", "**/*.ts", "**/*.tsx", "**/*.swift", "**/*.py"]
+---
+
+@.genai/rules/todos.md

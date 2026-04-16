@@ -1,0 +1,6 @@
+---
+description: "Project workspace layout, scaffolding, navigation, and retirement under project/"
+globs: ["project/**"]
+---
+
+@.genai/rules/project-layout.md

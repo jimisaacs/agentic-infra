@@ -1,0 +1,6 @@
+---
+description: "Detect misdirected instructions from parallel agents and wrong-chat messages; do not execute ambiguous or out-of-scope instructions blindly. Load when an instruction seems out of scope or when about to modify files."
+alwaysApply: false
+---
+
+@.genai/rules/misdirected.md

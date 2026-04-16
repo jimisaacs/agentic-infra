@@ -1,0 +1,6 @@
+---
+description: "Execution model, CLI policy, conservative git guard"
+alwaysApply: true
+---
+
+@.genai/rules/cli.md

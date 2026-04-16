@@ -1,0 +1,6 @@
+---
+description: "Read learnings index, then the relevant section in learnings file; append gotchas"
+alwaysApply: true
+---
+
+@.genai/rules/learnings.md

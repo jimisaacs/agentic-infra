@@ -1,0 +1,6 @@
+---
+description: "Decision records and ADR workflow for load-bearing architecture changes. Load when work touches boundaries, auth/trust semantics, data contracts, scaling, invariants, or docs/decisions/."
+alwaysApply: false
+---
+
+@.genai/rules/decision-records.md

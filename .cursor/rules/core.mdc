@@ -1,0 +1,18 @@
+---
+description: "Operating model, rules/skills navigation, Cursor-specific tooling"
+alwaysApply: true
+---
+
+@.genai/rules/core.md
+
+## Cursor-Specific
+
+### Skills
+
+Invoke via `@skill-name`. Index: [`.genai/skills/README.md`](../../.genai/skills/README.md). Language/stack conventions load automatically via glob-scoped rules.
+
+### Later Layers
+
+Review agents, slash commands, and richer MCP surfaces arrive in later layers. Use them only when the corresponding paths exist in this checkout.
+
+Plans, when present, live in `.cursor/plans/**/*.plan.md`.

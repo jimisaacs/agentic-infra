@@ -1,0 +1,6 @@
+---
+description: "Output rules: finish things, be brief, open items block"
+alwaysApply: true
+---
+
+@.genai/rules/delivery.md

@@ -1,0 +1,5 @@
+---
+description: "Canonical review persona catalog and routing guidance. Manual load only."
+---
+
+@.genai/rules/persona.md

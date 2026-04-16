@@ -12,11 +12,14 @@ dist/
 *.egg-info/
 node_modules/
 
+# Local project-context runtime artifacts
+.project-context/
+.tmp-project-context-lock/
+
 # Local coverage and platform clutter
 .coverage
 .coverage.*
 .DS_Store
 
 # Local scratch areas
-stacking-wip/
 *.code-workspace

@@ -1,0 +1,6 @@
+---
+description: "Python conventions for control plane, hooks, guard, and runtime code"
+globs: ["*.py", "dev", ".githooks/*"]
+---
+
+@.genai/rules/python.md

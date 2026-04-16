@@ -1,0 +1,6 @@
+---
+description: "What 'done' means: tiered polish + regression checklist + verify"
+alwaysApply: true
+---
+
+@.genai/rules/tight-work.md

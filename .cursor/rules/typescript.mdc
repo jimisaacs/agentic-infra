@@ -1,0 +1,6 @@
+---
+description: "TypeScript/React conventions for the web SPA"
+globs: ["*.ts", "*.tsx", "project/web/**"]
+---
+
+@.genai/rules/typescript.md

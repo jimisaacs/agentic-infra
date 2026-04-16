@@ -1,0 +1,14 @@
+{
+  "hooks": [
+    {
+      "event": "beforeShellExecution",
+      "script": ".claude/hooks/guard.py",
+      "description": "Enforce a conservative git allowlist via the shared Python guard hook. Formatting hooks should route through ./dev fmt."
+    },
+    {
+      "event": "afterFileEdit",
+      "script": ".claude/hooks/fmt-on-edit.py",
+      "description": "Route post-edit formatting through ./dev fmt so Cursor and Claude share the same control-plane normalization path."
+    }
+  ]
+}

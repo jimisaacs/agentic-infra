@@ -1,0 +1,19 @@
+name: "dev-verify"
+version: 1
+description: "Keep ./dev verify compact while preserving failures"
+
+match:
+  command: "./dev"
+  subcommand: "verify"
+
+streams: ["stdout", "stderr"]
+
+pipeline:
+  - action: "strip_ansi"
+  - action: "keep_lines"
+    pattern: "^(== |\\[ok\\]|\\[warn\\]|\\[error\\])"
+  - action: "head"
+    n: 120
+    overflow_msg: "+{remaining} more lines — re-run ./dev verify without snip if you need the raw stream"
+
+on_error: "passthrough"

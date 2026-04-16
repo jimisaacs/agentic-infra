@@ -1,24 +1,14 @@
 # Agentic Infrastructure
 
-A teaching-first starter kit that begins as a well-oiled human project and then evolves, branch by branch, into agentic infrastructure.
-
-## Human Baseline
-
-`main` is the human-first baseline:
-
-- `project/` is the worked-example multi-ecosystem app surface.
-- `./dev` is the human control plane for formatting, verification, lifecycle, and status.
-- `docs/` holds the engineering [principles](docs/PRINCIPLES.md) and [conventions](docs/CONVENTIONS.md).
-- `.githooks/` provides a lightweight local hook wrapper for baseline verification.
+This branch is the first agentic enhancement layer on top of the human project baseline in `main`. It keeps the same `project/` workspace and human `./dev`, then adds editor-agnostic rules, agent-facing maps, guardrails, AI-friendly shell helpers, and lightweight architecture governance.
 
 ## Quick Start
 
 ```bash
+git checkout stack/1-core
 ./dev help
 ./dev doctor
-./dev setup         # install the clone-local pre-commit hook
 ./dev verify
-./dev fmt
 ./dev status
 ./dev stack up         # build and start (dev mode: file watcher)
 ./dev stack up --prod  # build and start (prod mode: one-shot build)
@@ -27,27 +17,41 @@ A teaching-first starter kit that begins as a well-oiled human project and then 
 
 After `./dev stack up`, Pulse is at **http://localhost:3000**.
 
-## Project Pattern
+## What This Layer Adds
 
-Use this repo as a pattern for a tidy human project before you add editor- or agent-specific infrastructure:
+- `AGENTS.md` -- repo-wide agent guide
+- `CLAUDE.md` -- Claude Code entrypoint
+- `.genai/rules/` -- canonical rule prose (SSOT)
+- `.cursor/rules/` -- thin Cursor wrappers around the SSOT rules
+- `.claude/hooks/` -- shared guard and format-on-edit hooks
+- `.snip/` -- AI-friendly shell output filters
+- `docs/decisions/` and `docs/design/` -- governance and architecture depth
+
+## Project Pattern
 
 - Start with [project/README.md](project/README.md) for the ecosystem/target layout.
 - Read [docs/PRINCIPLES.md](docs/PRINCIPLES.md) for the engineering philosophy.
 - Read [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for coding standards.
 - Read [docs/guides/development.md](docs/guides/development.md) for the development workflow.
-- Use `./dev` to verify and inspect the baseline.
-- Run `./dev setup` if you want the tracked `.githooks/pre-commit` wrapper installed for this clone.
-- Use `git worktree` when you want isolated editing or execution without turning one checkout into a branch-hopping workspace.
+- Use `./dev` to verify and inspect the template.
 
-## Stack
+## Worked Example
 
-Later branches add the agentic layers:
+The repo also carries a small `project/` workspace so the infrastructure has something real to govern. Treat repo root as the agent-infra layer and `project/` as the example downstream app surface; start at `project/README.md` only when the task touches that sample app or its layout.
 
-| Branch | What it adds |
-| ------ | ------------ |
-| `stack/1-core` | Agentic rules, guardrails, and the first agent-facing `./dev` refinements |
-| `stack/2-agents-personas` | Review agents, workflow commands, swarm roster, persona catalog |
-| `stack/3-mcp` | Docs-first MCP server with in-memory backend |
-| `stack/4-persistence` | LanceDB persistence replacing in-memory backend |
-| `stack/5-rag` | Vector embeddings and semantic search |
-| `stack/6-evals` | Agent eval harness and demo scenarios |
+## Repo Structure
+
+| Path | Purpose |
+| ---- | ------- |
+| `.genai/rules/` | Canonical rule prose (SSOT) |
+| `.cursor/rules/` | Cursor wrappers (`.mdc` frontmatter + `@` references) |
+| `.claude/hooks/` | Guard, format-on-edit, and git hook scripts |
+| `.githooks/` | Thin Git hook wrappers |
+| `.snip/` | AI-friendly shell output filters |
+| `project/` | Worked-example product workspace organized by ecosystem and target; see `project/README.md` |
+| `docs/decisions/` | ADR/DEC governance framework |
+| `docs/design/` | Architecture docs and stack guide |
+
+## Stack Architecture
+
+This repo uses a stacked branch model. Each branch builds on the previous one, teaching one layer of agentic infrastructure at a time. See [docs/design/stack/README.md](docs/design/stack/README.md) for the full guide.

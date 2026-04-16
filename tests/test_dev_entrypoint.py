@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.machinery
 import importlib.util
+import json
 import os
 from pathlib import Path
 from unittest.mock import patch
@@ -21,27 +22,43 @@ def load_extensionless_module(path: Path, module_name: str):
     return module
 
 
-dev_module = load_extensionless_module(DEV_PATH, "baseline_dev")
+dev_module = load_extensionless_module(DEV_PATH, "template_dev")
 
 
 class DevEntrypointTests(unittest.TestCase):
     def test_core_commands_include_expected_surface(self) -> None:
-        for cmd in ("help", "setup", "verify", "fmt", "doctor", "status", "stack"):
+        for cmd in ("help", "setup", "verify", "fmt", "doctor", "status", "stack", "snip", "context"):
             self.assertIn(cmd, dev_module.CORE_COMMANDS)
 
-    def test_required_paths_include_human_baseline_contract(self) -> None:
-        self.assertIn("project/README.md", dev_module.REQUIRED_PATHS)
-        self.assertIn(".githooks/pre-commit", dev_module.REQUIRED_PATHS)
-        self.assertIn("docs/PRINCIPLES.md", dev_module.REQUIRED_PATHS)
-        self.assertIn("docs/CONVENTIONS.md", dev_module.REQUIRED_PATHS)
-        self.assertIn(".editorconfig", dev_module.REQUIRED_PATHS)
+    def test_required_paths_include_project_layout_contract(self) -> None:
+        required_paths = dev_module._required_paths(REPO_ROOT)
+        self.assertIn("project/README.md", required_paths)
+        self.assertIn(".cursor/worktrees.json", required_paths)
+        self.assertIn(".genai/rules/project-layout.md", required_paths)
+        self.assertIn(".cursor/rules/project-layout.mdc", required_paths)
+        self.assertIn("docs/PRINCIPLES.md", required_paths)
+        self.assertIn("docs/CONVENTIONS.md", required_paths)
+        self.assertIn(".editorconfig", required_paths)
 
     def test_normalize_text_strips_trailing_whitespace_and_ensures_newline(self) -> None:
         self.assertEqual(dev_module.normalize_text("hello  \nworld\t"), "hello\nworld\n")
 
     def test_should_skip_link_only_for_external_targets(self) -> None:
         self.assertTrue(dev_module.should_skip_link("https://example.com"))
-        self.assertFalse(dev_module.should_skip_link("project/README.md"))
+        self.assertFalse(dev_module.should_skip_link("docs/ROADMAP.md"))
+
+    def test_needs_git_guard_on_snip(self) -> None:
+        self.assertTrue(dev_module.needs_git_guard_on_snip(["git", "status"]))
+        self.assertTrue(dev_module.needs_git_guard_on_snip(["/usr/bin/git", "status"]))
+        self.assertFalse(dev_module.needs_git_guard_on_snip(["./dev", "verify"]))
+
+    def test_cursor_mcp_registration_is_valid(self) -> None:
+        payload = json.loads((REPO_ROOT / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
+        self.assertIn("mcpServers", payload)
+        project_context = payload["mcpServers"].get("project-context")
+        if project_context is not None:
+            self.assertEqual(project_context["command"], "./dev")
+            self.assertEqual(project_context["args"], ["context", "serve"])
 
 
 class TerminalTests(unittest.TestCase):

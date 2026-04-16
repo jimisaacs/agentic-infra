@@ -1,0 +1,6 @@
+---
+description: "Progressive disclosure — minimize always-on token cost, defer depth"
+alwaysApply: true
+---
+
+@.genai/rules/context-efficiency.md
