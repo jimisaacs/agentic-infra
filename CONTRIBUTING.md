@@ -4,12 +4,14 @@ This branch adds the first agentic layer on top of the human baseline from `main
 
 ## Local Loop
 
-Prerequisites: `python3`, `git`, and `docker`. Optional: `snip`. Project tools such as `go`, `node`, and `npm` are only needed for host-native development (`./dev stack dev`).
+Prerequisites: `python3`, `git`, and `docker`. For `./dev setup`, you also need a discoverable Python 3.10+ runtime on `PATH` (or via `PROJECT_CONTEXT_PYTHON`). Optional: `snip`. Project tools such as `go`, `node`, and `npm` are only needed for host-native development (`./dev stack dev`).
 
 1. Run `./dev doctor` once on a new machine.
-2. Make the smallest correct change.
-3. Run `./dev fmt` after edits.
-4. Run `./dev verify` before calling the work done.
+2. Run `./dev setup` if you need the local docs-first `project-context` runtime or want the clone-local Git hook wrappers installed.
+3. Make the smallest correct change.
+4. Run `./dev fmt` after edits.
+5. Run `./dev verify` before calling the work done.
+6. If you changed the local MCP/runtime surface, also run `./dev context smoke`.
 
 ## What To Keep True
 

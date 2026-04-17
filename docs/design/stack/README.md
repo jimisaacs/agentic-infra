@@ -9,7 +9,7 @@ This repo uses a Graphite-managed stacked branch model. Each branch builds addit
 | `main` | Human baseline | `project/`, human `./dev`, `.githooks/`, and human-facing docs | -- |
 | `stack/1-core` | Agentic core | Rules, guardrails, worktree guidance, and the first agent-facing `./dev` refinements | [1-core.md](1-core.md) |
 | `stack/2-agents-personas` | Agents + personas | Review agents, workflow commands, swarm roster, persona catalog | [2-agents-personas.md](2-agents-personas.md) |
-| `stack/3-mcp` | MCP server | Docs-first MCP runtime with in-memory backend | `3-mcp.md` |
+| `stack/3-mcp` | MCP server | Docs-first MCP runtime with in-memory backend | [3-mcp.md](3-mcp.md) |
 | `stack/4-persistence` | LanceDB persistence | Replaces in-memory backend with embedded database | `4-persistence.md` |
 | `stack/5-rag` | Vector RAG | Embedding generation, hybrid lexical+semantic search | `5-rag.md` |
 

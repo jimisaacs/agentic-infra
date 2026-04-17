@@ -38,5 +38,6 @@ Keep code, config, docs, rules, skills, learnings, and decision records as the c
 
 ## Links
 
+- [Git-derived memory](../../design/git-derived-memory.md)
 - [Best-in-class agentic project infra](../../design/agentic-project-infra.md)
 - [DEC-0001](../backlog.md)

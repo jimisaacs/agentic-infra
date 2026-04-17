@@ -130,4 +130,7 @@ The main unresolved decisions are tracked in [../decisions/backlog.md](../decisi
 
 - [README.md](../../README.md)
 - [../../AGENTS.md](../../AGENTS.md)
+- [project-context-mcp.md](project-context-mcp.md)
+- [git-derived-memory.md](git-derived-memory.md)
+- [shared-platform-mcp.md](shared-platform-mcp.md)
 - [../decisions/README.md](../decisions/README.md)

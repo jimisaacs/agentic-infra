@@ -45,8 +45,11 @@ Review agent definitions live in `.genai/agents/` (SSOT) with Cursor wrappers in
 1. Read `README.md` if you need the repo map in plain English.
 2. Run `./dev doctor` on a new machine.
 3. Run `./dev verify` before calling template work complete.
+4. Run `./dev setup` when you need the local docs-first `project-context` runtime or want the repo-managed Git hook wrappers installed for this clone.
 
 Hook scripts in this repo enforce a conservative git allowlist. Keep shell commands simple; do not assume every read-only `git` form is permitted.
+
+Use `./dev context status` and `./dev context smoke` when debugging the local self-query runtime or its bootstrap path.
 
 ## On-Demand Context
 

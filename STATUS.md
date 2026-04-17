@@ -11,11 +11,17 @@ This file models a lightweight status doc for a teaching-first project.
 - SSOT pattern extended: `.genai/commands/`, `.genai/agents/`, `.genai/skills/`, `.genai/learnings*.md` are canonical; `.cursor/` versions are thin wrappers.
 - Advanced layers stay available: personas, swarm roster docs, specialist reviewers, and workflow commands remain in the repo but should not be required reading for day-one use.
 
+- Local self-query is real: `./dev setup` bootstraps a docs-first `project-context` runtime and `./dev context ...` exposes status, rebuild, search, smoke, and serve operations.
+
 ## What Works Now
 
 - A downstream project can copy this template and start from one control-plane entrypoint.
 - The top-level docs point at real files instead of placeholder paths.
 - The guard enforces a conservative shell allowlist for agent safety.
+- Cursor can register a local `project-context` MCP through `.cursor/mcp.json` once the runtime is bootstrapped.
+- Claude Code can register the same MCP through `.claude/mcp.json`.
+- The local MCP currently exposes a thin docs-first tool surface: `search`, `fetch`, `bundle`, `decisions`, `status`, and `rebuild`.
+- The docs-first index is stored under `.project-context/`, outside git, and remains non-canonical derived memory.
 - Review delivery has a richer persona/swarm system without forcing it into the first-read path.
 
 ## What To Customize Downstream
