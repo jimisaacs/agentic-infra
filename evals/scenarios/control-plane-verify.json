@@ -1,0 +1,18 @@
+{
+  "id": "control-plane-verify",
+  "description": "Agent discovers and uses the control plane to verify the repo",
+  "prompt": "Find this repo's verification command and run it. Summarize what it checks and whether it passed.",
+  "workspace": ".",
+  "runner": "cursor",
+  "runner_options": {
+    "sandbox": "enabled"
+  },
+  "expectations": {
+    "exit_code": 0,
+    "required_phrases": ["./dev verify"],
+    "forbidden_phrases": ["command not found"],
+    "required_patterns": [],
+    "forbidden_patterns": []
+  },
+  "tags": ["eval", "demo"]
+}

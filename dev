@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Iterable
 
 REPO_ROOT = Path(__file__).resolve().parent
-CORE_COMMANDS = ["help", "setup", "verify", "fmt", "doctor", "status", "stack", "snip", "context"]
+CORE_COMMANDS = ["help", "setup", "verify", "fmt", "doctor", "status", "stack", "snip", "context", "eval"]
 
 _CORE_REQUIRED_PATHS = [
     "README.md",
@@ -91,6 +91,20 @@ _LAYER4_REQUIRED_PATHS = [
     "pyproject.toml",
     "requirements-project-context.lock",
 ]
+_LAYER6_REQUIRED_PATHS = [
+    "scripts/agent_eval/__init__.py",
+    "scripts/agent_eval/cli.py",
+    "scripts/agent_eval/schema.py",
+    "scripts/agent_eval/scoring.py",
+    "scripts/agent_eval/reporting.py",
+    "scripts/agent_eval/runners/__init__.py",
+    "scripts/agent_eval/runners/base.py",
+    "scripts/agent_eval/runners/cursor.py",
+    "evals/README.md",
+    "evals/scenarios/cold-start-orientation.json",
+    "walkthrough/6-evals.md",
+    "docs/design/stack/6-evals.md",
+]
 
 _CORE_PYTHON_PARSE_PATHS = [
     "dev",
@@ -108,6 +122,16 @@ _LAYER3_PYTHON_PARSE_PATHS = [
     "scripts/project_context/cli.py",
     "scripts/project_context/dev_commands.py",
 ]
+_LAYER6_PYTHON_PARSE_PATHS = [
+    "scripts/agent_eval/__init__.py",
+    "scripts/agent_eval/cli.py",
+    "scripts/agent_eval/schema.py",
+    "scripts/agent_eval/scoring.py",
+    "scripts/agent_eval/reporting.py",
+    "scripts/agent_eval/runners/__init__.py",
+    "scripts/agent_eval/runners/base.py",
+    "scripts/agent_eval/runners/cursor.py",
+]
 
 
 def _has_layer2(repo_root: Path) -> bool:
@@ -122,6 +146,10 @@ def _has_layer4(repo_root: Path) -> bool:
     return (repo_root / "pyproject.toml").exists()
 
 
+def _has_layer6(repo_root: Path) -> bool:
+    return (repo_root / "scripts/agent_eval/__init__.py").exists()
+
+
 def _required_paths(repo_root: Path) -> list[str]:
     paths = list(_CORE_REQUIRED_PATHS)
     if _has_layer2(repo_root):
@@ -130,6 +158,8 @@ def _required_paths(repo_root: Path) -> list[str]:
         paths.extend(_LAYER3_REQUIRED_PATHS)
     if _has_layer4(repo_root):
         paths.extend(_LAYER4_REQUIRED_PATHS)
+    if _has_layer6(repo_root):
+        paths.extend(_LAYER6_REQUIRED_PATHS)
     return paths
 
 
@@ -137,6 +167,8 @@ def _python_parse_paths(repo_root: Path) -> list[str]:
     paths = list(_CORE_PYTHON_PARSE_PATHS)
     if _has_layer3(repo_root):
         paths.extend(_LAYER3_PYTHON_PARSE_PATHS)
+    if _has_layer6(repo_root):
+        paths.extend(_LAYER6_PYTHON_PARSE_PATHS)
     return paths
 
 
@@ -676,6 +708,10 @@ def check_doc_contract() -> list[str]:
             "./dev setup",
             "./dev context smoke",
         ])
+    if _has_layer6(REPO_ROOT):
+        required_snippets.setdefault("CONTRIBUTING.md", []).extend([
+            "./dev eval",
+        ])
     forbidden_snippets = {
         "README.md": [".claude/commands/"],
         "CLAUDE.md": [".claude/commands/"],
@@ -932,6 +968,22 @@ def cmd_status(_args: argparse.Namespace) -> int:
     else:
         print_section("Project context")
         print("  not available at this layer (available from stack/3-mcp)")
+
+    if _has_layer6(REPO_ROOT):
+        print_section("Agent evals")
+        scenarios_dir = REPO_ROOT / "evals" / "scenarios"
+        scenario_count = len(list(scenarios_dir.glob("*.json"))) if scenarios_dir.is_dir() else 0
+        print(f"  scenarios: {scenario_count}")
+        artifacts_dir = REPO_ROOT / ".tmp-agent-evals"
+        runs = sorted(artifacts_dir.iterdir()) if artifacts_dir.is_dir() else []
+        runs = [r for r in runs if r.is_dir()]
+        if runs:
+            print(f"  latest run: {runs[-1].name}")
+        else:
+            print(f"  latest run: {term.dim('none')}")
+    else:
+        print_section("Agent evals")
+        print("  not available at this layer (available from stack/6-evals)")
     return 0
 
 
@@ -1152,6 +1204,19 @@ def cmd_context(args: argparse.Namespace) -> int:
     return run_context_cli(REPO_ROOT, context_args, print_error)
 
 
+def cmd_eval(args: argparse.Namespace) -> int:
+    eval_args = list(args.eval_args)
+    if not eval_args:
+        print("Usage: ./dev eval <run|list|report> [...]")
+        return 0
+    if not _has_layer6(REPO_ROOT):
+        print_error("agent-eval harness not available at this layer. Available from stack/6-evals.")
+        return 1
+    command = [sys.executable, "-m", "scripts.agent_eval.cli", "--repo-root", str(REPO_ROOT), *eval_args]
+    proc = subprocess.run(command, cwd=REPO_ROOT, check=False)
+    return proc.returncode
+
+
 # ---------------------------------------------------------------------------
 # Parser
 # ---------------------------------------------------------------------------
@@ -1201,6 +1266,10 @@ def build_parser() -> argparse.ArgumentParser:
     context_parser = subparsers.add_parser("context", help="Operate the local project-context runtime (layer 3+)")
     context_parser.add_argument("context_args", nargs=argparse.REMAINDER)
     context_parser.set_defaults(func=cmd_context)
+
+    eval_parser = subparsers.add_parser("eval", help="Run agent eval scenarios (layer 6+)")
+    eval_parser.add_argument("eval_args", nargs=argparse.REMAINDER)
+    eval_parser.set_defaults(func=cmd_eval)
 
     return parser
 

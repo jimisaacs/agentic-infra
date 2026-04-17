@@ -19,7 +19,14 @@ This file models a lightweight roadmap for a project that adopts the template.
 - Keep swarm orchestration, reviewer specialization, persona routing, and challenge flows available.
 - Ensure those surfaces are explicitly optional for teams that want a simpler operating model.
 
-## Milestone 4 — Downstream Specialization
+## Milestone 4 — Agent Evals and Demo
+
+- Ship a repeatable agent-eval harness via `./dev eval` with local scenario truth.
+- Provide cold-start, worktree-awareness, and control-plane verification scenarios as seed corpus.
+- Turn passing eval scenarios into curated demo material with presenter-friendly reports.
+- Keep the harness provider-agnostic; add a Claude runner adapter as a follow-on.
+
+## Milestone 5 — Downstream Specialization
 
 - Add language rules, domain skills, and project-specific invariants.
 - Replace template placeholders with real verification, status, roadmap, and protocol docs.

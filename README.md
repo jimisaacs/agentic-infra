@@ -75,6 +75,7 @@ For review agents, workflow commands, persona-driven delivery, and swarm orchest
 | `.claude/hooks/` | Guard, format-on-edit, and git hook scripts |
 | `.githooks/` | Thin Git hook wrappers |
 | `.snip/` | AI-friendly shell output filters |
+| `evals/scenarios/` | Agent eval scenario definitions |
 | `project/` | Worked-example product workspace organized by ecosystem and target; see `project/README.md` |
 | `docs/decisions/` | ADR/DEC governance framework |
 | `docs/design/` | Architecture docs and stack guide |

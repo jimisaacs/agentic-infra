@@ -1,0 +1,18 @@
+{
+  "id": "worktree-awareness",
+  "description": "Agent explains the worktree and stacked branch model",
+  "prompt": "Explain how this repo uses Git worktrees and stacked branches. What are the rules for working in a worktree versus the home checkout?",
+  "workspace": ".",
+  "runner": "cursor",
+  "runner_options": {
+    "sandbox": "enabled"
+  },
+  "expectations": {
+    "exit_code": 0,
+    "required_phrases": ["worktree", "Graphite"],
+    "forbidden_phrases": [],
+    "required_patterns": ["gt (sync|restack|submit|checkout)"],
+    "forbidden_patterns": []
+  },
+  "tags": ["eval", "demo"]
+}

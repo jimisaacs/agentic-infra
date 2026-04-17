@@ -62,6 +62,11 @@ Read these only when the task requires them:
 - [.genai/learnings-index.md](.genai/learnings-index.md) — choose a domain, then open only that section in `.genai/learnings.md`
 - [.genai/skills/README.md](.genai/skills/README.md) — skill index for on-demand depth
 
+Read these only when working on the agent eval harness or demo scenarios:
+
+- [evals/README.md](evals/README.md) — scenario format, usage, artifact policy
+- [docs/design/stack/6-evals.md](docs/design/stack/6-evals.md) — teaching narrative for the eval layer
+
 Read these advanced overlays only when working on review delivery or swarm behavior:
 
 - [.genai/swarm-roster/README.md](.genai/swarm-roster/README.md)

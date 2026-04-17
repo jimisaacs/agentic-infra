@@ -30,4 +30,5 @@ Prerequisites: `python3`, `git`, and `docker`. For `./dev setup`, you also need 
 - Review delivery or persona routing changed: update `.genai/personas/` and `.genai/swarm-roster/` rather than copying logic into reviewers.
 - Architecture or load-bearing workflow changed: update `docs/decisions/` and `docs/design/` as appropriate.
 - Principles or conventions changed: update `docs/PRINCIPLES.md` or `docs/CONVENTIONS.md` and ensure consistency with the control plane.
+- Eval scenarios changed: update `evals/scenarios/`, run `./dev eval list` to verify, and ensure walkthrough and design docs reflect the current corpus.
 - Teaching story changed: update `STATUS.md` and `docs/ROADMAP.md` so the example remains coherent.

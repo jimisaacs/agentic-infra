@@ -13,6 +13,8 @@ This file models a lightweight status doc for a teaching-first project.
 
 - Local self-query is real: `./dev setup` bootstraps a docs-first `project-context` runtime and `./dev context ...` exposes status, rebuild, search, smoke, and serve operations.
 
+- Agent eval harness is real: `./dev eval` runs repeatable agent-behavior scenarios, scores output against expected signals, and produces eval or demo reports. Scenarios live under `evals/scenarios/` as canonical local truth.
+
 ## What Works Now
 
 - A downstream project can copy this template and start from one control-plane entrypoint.
@@ -23,6 +25,7 @@ This file models a lightweight status doc for a teaching-first project.
 - The local MCP currently exposes a thin docs-first tool surface: `search`, `fetch`, `bundle`, `decisions`, `status`, and `rebuild`.
 - The docs-first index is stored under `.project-context/`, outside git, and remains non-canonical derived memory.
 - Review delivery has a richer persona/swarm system without forcing it into the first-read path.
+- The agent eval harness runs cold-start scenarios via `cursor agent -p` and scores them deterministically. Run artifacts are derived and gitignored.
 
 ## What To Customize Downstream
 

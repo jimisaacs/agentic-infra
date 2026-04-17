@@ -16,6 +16,9 @@ node_modules/
 .project-context/
 .tmp-project-context-lock/
 
+# Local agent-eval run artifacts
+.tmp-agent-evals/
+
 # Local coverage and platform clutter
 .coverage
 .coverage.*

@@ -77,6 +77,8 @@ Detailed workflow lives in `.genai/rules/decision-records.md`.
 | `.cursor/worktrees.json` | Cursor worktree setup hooks for isolated execution |
 | `.claude/` | Claude Code hook scripts, settings, and MCP config |
 | `scripts/project_context/` | Docs-first local `project-context` MCP runtime, indexer, and server |
+| `scripts/agent_eval/` | Agent eval harness: runners, scoring, reporting |
+| `evals/scenarios/` | Canonical eval scenario definitions (JSON) |
 | `.githooks/` | Pre-commit hook wrapper that runs `./dev verify` |
 | `.snip/` | Example shell-output filters for AI workflows |
 | `project/` | Worked-example product workspace organized by ecosystem and target |
@@ -94,6 +96,7 @@ Detailed workflow lives in `.genai/rules/decision-records.md`.
 - `./dev setup` — bootstrap the local `project-context` runtime and Git hook wrappers
 - `./dev snip ...` — run upstream `snip` with this repo's local filters
 - `./dev context ...` — operate the local `project-context` runtime (`status`, `search`, `rebuild`, `smoke`, `serve`)
+- `./dev eval ...` — run agent eval scenarios (`run`, `list`, `report`)
 
 ## Invariants
 
@@ -132,6 +135,10 @@ If you changed the local `project-context` runtime, `.cursor/mcp.json`, or the G
 
 - `./dev setup`
 - `./dev context smoke`
+
+If you changed the agent eval harness or eval scenarios, also run:
+
+- `./dev eval list`
 
 If verification depends on a project-specific policy that is not yet encoded, reviewers should mark that part **UNKNOWN** instead of implying it was run.
 

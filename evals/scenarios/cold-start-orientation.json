@@ -1,0 +1,18 @@
+{
+  "id": "cold-start-orientation",
+  "description": "Fresh agent orients in the repo without extra hints",
+  "prompt": "You are in an unfamiliar repo. Describe what this project is and how to verify it works.",
+  "workspace": ".",
+  "runner": "cursor",
+  "runner_options": {
+    "sandbox": "enabled"
+  },
+  "expectations": {
+    "exit_code": 0,
+    "required_phrases": ["./dev", "AGENTS.md"],
+    "forbidden_phrases": ["I don't have access"],
+    "required_patterns": [],
+    "forbidden_patterns": []
+  },
+  "tags": ["cold-start", "demo", "eval"]
+}
