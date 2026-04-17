@@ -1,0 +1,857 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import atexit
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import re
+import time
+from pathlib import Path
+from typing import Iterable
+
+REPO_ROOT = Path(__file__).resolve().parent
+CORE_COMMANDS = ["help", "setup", "verify", "fmt", "doctor", "status", "stack"]
+
+REQUIRED_PATHS = [
+    "README.md",
+    "CONTRIBUTING.md",
+    "dev",
+    ".gitignore",
+    ".editorconfig",
+    ".githooks/pre-commit",
+    "project/README.md",
+    "project/web/package.json",
+    "project/web/tsconfig.json",
+    "docs/PRINCIPLES.md",
+    "docs/CONVENTIONS.md",
+    "docs/guides/development.md",
+    "tests/test_dev_entrypoint.py",
+    "tests/test_pre_commit_wrapper.py",
+]
+
+PYTHON_PARSE_PATHS = [
+    "dev",
+    ".githooks/pre-commit",
+]
+
+TEXT_SUFFIXES = {
+    ".css",
+    ".html",
+    ".json",
+    ".md",
+    ".py",
+    ".toml",
+    ".ts",
+    ".tsx",
+    ".txt",
+    ".lock",
+    ".yaml",
+    ".yml",
+}
+
+SPECIAL_FILENAMES = {"dev"}
+EXCLUDED_PARTS = {
+    ".git",
+    ".venv",
+    "__pycache__",
+    ".cache",
+    ".local",
+    "node_modules",
+    ".project-context",
+    ".tmp-project-context-lock",
+}
+
+LINK_PATTERN = re.compile(r"(?<!!)\[[^\]]*]\(([^)]+)\)")
+
+
+# ---------------------------------------------------------------------------
+# Terminal awareness
+# ---------------------------------------------------------------------------
+
+class Terminal:
+    def __init__(self) -> None:
+        self.is_tty = sys.stdout.isatty()
+        self.color = self._should_color()
+        self.unicode = self._should_unicode()
+
+    def _should_color(self) -> bool:
+        if os.environ.get("NO_COLOR") is not None:
+            return False
+        if os.environ.get("CLICOLOR_FORCE", "0") != "0":
+            return True
+        if not self.is_tty:
+            return False
+        term = os.environ.get("TERM", "")
+        if term == "dumb":
+            return False
+        return True
+
+    def _should_unicode(self) -> bool:
+        if not self.is_tty:
+            return False
+        lang = os.environ.get("LANG", "") + os.environ.get("LC_ALL", "")
+        return "UTF-8" in lang.upper() or "UTF8" in lang.upper()
+
+    def _ansi(self, code: str, text: str) -> str:
+        if not self.color:
+            return text
+        return f"\033[{code}m{text}\033[0m"
+
+    def green(self, text: str) -> str:
+        return self._ansi("32", text)
+
+    def red(self, text: str) -> str:
+        return self._ansi("31", text)
+
+    def yellow(self, text: str) -> str:
+        return self._ansi("33", text)
+
+    def cyan(self, text: str) -> str:
+        return self._ansi("36", text)
+
+    def dim(self, text: str) -> str:
+        return self._ansi("2", text)
+
+    def bold(self, text: str) -> str:
+        return self._ansi("1", text)
+
+    @property
+    def sym_ok(self) -> str:
+        return "\u2714" if self.unicode else "[ok]"
+
+    @property
+    def sym_err(self) -> str:
+        return "\u2718" if self.unicode else "[error]"
+
+    @property
+    def sym_warn(self) -> str:
+        return "\u26a0" if self.unicode else "[warn]"
+
+    @property
+    def sym_arrow(self) -> str:
+        return "\u2192" if self.unicode else "->"
+
+
+term = Terminal()
+
+
+def print_section(title: str) -> None:
+    print(f"\n{term.bold(term.cyan(f'== {title} =='))}")
+
+
+def print_ok(message: str) -> None:
+    print(f"{term.green(term.sym_ok)} {message}")
+
+
+def print_warn(message: str) -> None:
+    print(f"{term.yellow(term.sym_warn)} {message}")
+
+
+def print_error(message: str) -> None:
+    print(f"{term.red(term.sym_err)} {message}")
+
+
+# ---------------------------------------------------------------------------
+# Signal handling
+# ---------------------------------------------------------------------------
+
+_children: list[subprocess.Popen] = []  # type: ignore[type-arg]
+
+
+def _cleanup_children() -> None:
+    for proc in _children:
+        if proc.poll() is None:
+            try:
+                proc.terminate()
+            except OSError:
+                pass
+    deadline = time.monotonic() + 5.0
+    for proc in _children:
+        remaining = max(0, deadline - time.monotonic())
+        try:
+            proc.wait(timeout=remaining)
+        except subprocess.TimeoutExpired:
+            try:
+                proc.kill()
+            except OSError:
+                pass
+
+
+def setup_signals() -> None:
+    if hasattr(signal, "SIGPIPE"):
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+    def _handle_term(signum: int, _frame: object) -> None:
+        _cleanup_children()
+        sys.exit(128 + signum)
+
+    signal.signal(signal.SIGTERM, _handle_term)
+
+
+atexit.register(_cleanup_children)
+
+
+# ---------------------------------------------------------------------------
+# Subprocess helper
+# ---------------------------------------------------------------------------
+
+def run_cmd(
+    cmd: list[str],
+    *,
+    cwd: Path | None = None,
+    capture: bool = False,
+    check: bool = True,
+) -> subprocess.CompletedProcess[str]:
+    sys.stdout.flush()
+    sys.stderr.flush()
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=cwd or REPO_ROOT,
+            capture_output=capture,
+            text=True,
+            check=check,
+        )
+    except FileNotFoundError:
+        print_error(f"command not found: {cmd[0]}")
+        raise SystemExit(1)
+    except subprocess.CalledProcessError as exc:
+        if not capture:
+            raise SystemExit(exc.returncode)
+        raise
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def rel(path: Path) -> str:
+    return path.relative_to(REPO_ROOT).as_posix()
+
+
+def repo_path(raw: str) -> Path:
+    return REPO_ROOT / raw
+
+
+def git_path(raw: str) -> Path:
+    proc = subprocess.run(
+        ["git", "rev-parse", "--git-path", raw],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise SystemExit(proc.returncode)
+    return Path(proc.stdout.strip()).resolve()
+
+
+def is_text_path(path: Path) -> bool:
+    if any(part in EXCLUDED_PARTS for part in path.parts):
+        return False
+    return path.suffix in TEXT_SUFFIXES or path.name in SPECIAL_FILENAMES
+
+
+def iter_repo_text_files() -> Iterable[Path]:
+    for path in sorted(REPO_ROOT.rglob("*")):
+        if path.is_file() and is_text_path(path):
+            yield path
+
+
+def collect_paths(raw_paths: list[str]) -> list[Path]:
+    if not raw_paths:
+        return list(iter_repo_text_files())
+
+    collected: list[Path] = []
+    seen: set[Path] = set()
+
+    for raw in raw_paths:
+        candidate = Path(raw)
+        if not candidate.is_absolute():
+            candidate = (Path.cwd() / candidate).resolve()
+        else:
+            candidate = candidate.resolve()
+
+        try:
+            candidate.relative_to(REPO_ROOT)
+        except ValueError as exc:
+            raise SystemExit(f"path outside repo root: {raw}") from exc
+
+        if not candidate.exists():
+            raise SystemExit(f"path does not exist: {raw}")
+
+        if candidate.is_dir():
+            for nested in sorted(candidate.rglob("*")):
+                if nested.is_file() and is_text_path(nested) and nested not in seen:
+                    seen.add(nested)
+                    collected.append(nested)
+            continue
+
+        if is_text_path(candidate) and candidate not in seen:
+            seen.add(candidate)
+            collected.append(candidate)
+
+    return collected
+
+
+def normalize_text(text: str) -> str:
+    if text == "":
+        return ""
+    lines = text.splitlines()
+    normalized = "\n".join(line.rstrip(" \t") for line in lines)
+    return normalized + "\n"
+
+
+# ---------------------------------------------------------------------------
+# Format
+# ---------------------------------------------------------------------------
+
+def run_format(paths: list[Path], check_only: bool) -> int:
+    changed: list[Path] = []
+    for path in paths:
+        original = path.read_text(encoding="utf-8")
+        normalized = normalize_text(original)
+        if normalized == original:
+            continue
+        changed.append(path)
+        if not check_only:
+            path.write_text(normalized, encoding="utf-8")
+
+    if changed:
+        action = "would format" if check_only else "formatted"
+        for path in changed:
+            print(f"{action}: {rel(path)}")
+        return 1 if check_only else 0
+
+    print("format: no changes needed")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Verification checks
+# ---------------------------------------------------------------------------
+
+def check_required_paths() -> list[str]:
+    print_section("Required paths")
+    failures: list[str] = []
+    for raw in REQUIRED_PATHS:
+        path = repo_path(raw)
+        if path.exists():
+            print_ok(raw)
+            continue
+        print_error(f"missing: {raw}")
+        failures.append(raw)
+    return failures
+
+
+def check_python_syntax() -> list[str]:
+    print_section("Python syntax")
+    failures: list[str] = []
+    for raw in PYTHON_PARSE_PATHS:
+        path = repo_path(raw)
+        try:
+            compile(path.read_text(encoding="utf-8"), str(path), "exec")
+        except SyntaxError as exc:
+            print_error(f"python compile failed: {raw} ({exc})")
+            failures.append(raw)
+            continue
+        except Exception as exc:  # noqa: BLE001
+            print_error(f"python compile failed: {raw} ({exc})")
+            failures.append(raw)
+            continue
+        print_ok(raw)
+    return failures
+
+
+def check_unit_tests() -> list[str]:
+    print_section("Unit tests")
+    proc = subprocess.run(
+        ["python3", "-m", "unittest", "discover", "-s", "tests"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode == 0:
+        print_ok("unit tests passed")
+        return []
+    print_error("unit tests failed")
+    sys.stderr.write(proc.stdout)
+    sys.stderr.write(proc.stderr)
+    return ["unit tests failed"]
+
+
+def should_skip_link(target: str) -> bool:
+    if target.startswith(("http://", "https://", "mailto:", "#")):
+        return True
+    if target.startswith("<") and target.endswith(">"):
+        return True
+    return False
+
+
+def check_markdown_links() -> list[str]:
+    print_section("Markdown links")
+    failures: list[str] = []
+    docs = sorted(
+        [
+            path
+            for path in REPO_ROOT.rglob("*")
+            if path.is_file()
+            and path.suffix in {".md"}
+            and not any(part in EXCLUDED_PARTS for part in path.parts)
+        ]
+    )
+    for doc in docs:
+        text = doc.read_text(encoding="utf-8")
+        for match in LINK_PATTERN.finditer(text):
+            raw_target = match.group(1).strip()
+            if should_skip_link(raw_target):
+                continue
+            target = raw_target.split("#", 1)[0]
+            if target == "" or "*" in target:
+                continue
+            resolved = (doc.parent / target).resolve()
+            try:
+                resolved.relative_to(REPO_ROOT)
+            except ValueError:
+                continue
+            if resolved.exists():
+                continue
+            message = f"{rel(doc)} -> {raw_target}"
+            print_error(message)
+            failures.append(message)
+    if not failures:
+        print_ok("all markdown links resolve")
+    return failures
+
+
+def check_doc_contract() -> list[str]:
+    print_section("Doc contract")
+    failures: list[str] = []
+    required_snippets: dict[str, list[str]] = {
+        "README.md": [
+            "project/README.md",
+            "./dev verify",
+            "docs/PRINCIPLES.md",
+        ],
+        "CONTRIBUTING.md": [
+            "./dev verify",
+            "./dev fmt",
+        ],
+        "project/README.md": [
+            "project/{ecosystem}/{target}/",
+            "## Quick Start",
+        ],
+        "docs/PRINCIPLES.md": [
+            "## Core",
+        ],
+        "docs/CONVENTIONS.md": [
+            "## Formatting",
+        ],
+    }
+    for raw, snippets in required_snippets.items():
+        path = repo_path(raw)
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for snippet in snippets:
+            if snippet in text:
+                continue
+            message = f"{raw} missing snippet: {snippet}"
+            print_error(message)
+            failures.append(message)
+    if not failures:
+        print_ok("baseline docs match the control-plane contract")
+    return failures
+
+
+def check_format_drift() -> list[str]:
+    print_section("Formatting drift")
+    failures: list[str] = []
+    for path in iter_repo_text_files():
+        original = path.read_text(encoding="utf-8")
+        normalized = normalize_text(original)
+        if normalized == original:
+            continue
+        print_error(f"format drift: {rel(path)}")
+        failures.append(rel(path))
+    if not failures:
+        print_ok("format check clean")
+    return failures
+
+
+def check_web_build() -> list[str]:
+    print_section("Web build")
+    if not shutil.which("docker"):
+        print_error("docker not available (required for web build verification)")
+        return ["docker not available"]
+    proc = subprocess.run(
+        _compose_cmd(_FILES_PROD) + ["build", "web"],
+        cwd=STACK_DIR,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode == 0:
+        print_ok("web build passed (tsc + vite)")
+        return []
+    print_error("web build failed")
+    sys.stderr.write(proc.stdout)
+    sys.stderr.write(proc.stderr)
+    return ["web build failed"]
+
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+
+def cmd_fmt(args: argparse.Namespace) -> int:
+    return run_format(collect_paths(args.paths), check_only=args.check)
+
+
+def cmd_setup(_args: argparse.Namespace) -> int:
+    hook_target = git_path("hooks/pre-commit")
+    hook_target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(repo_path(".githooks/pre-commit"), hook_target)
+    os.chmod(hook_target, 0o755)
+    print_ok(f"installed pre-commit hook: {hook_target}")
+    return 0
+
+
+def cmd_verify(_args: argparse.Namespace) -> int:
+    t0 = time.monotonic()
+    failures: list[str] = []
+    failures.extend(check_required_paths())
+    failures.extend(check_python_syntax())
+    failures.extend(check_unit_tests())
+    failures.extend(check_markdown_links())
+    failures.extend(check_doc_contract())
+    failures.extend(check_web_build())
+    failures.extend(check_format_drift())
+
+    elapsed = time.monotonic() - t0
+    if failures:
+        print_section("Result")
+        print_error(f"verify failed ({len(failures)} issue(s)) {term.dim(f'({elapsed:.1f}s)')}")
+        print("Run `./dev fmt` to fix formatting drift and then address the remaining issues.")
+        return 1
+
+    print_section("Result")
+    print_ok(f"verify passed {term.dim(f'({elapsed:.1f}s)')}")
+    return 0
+
+
+def cmd_doctor(_args: argparse.Namespace) -> int:
+    print_section("Doctor")
+    failures = 0
+
+    required = ["python3", "git", "docker"]
+    for tool_name in required:
+        if shutil.which(tool_name):
+            print_ok(f"required: {tool_name}")
+        else:
+            print_error(f"required (missing): {tool_name}")
+            failures += 1
+
+    project_tools = {
+        "go": "project/go/ compilation and ./dev stack dev",
+        "node": "project/web/ type checking and ./dev stack dev",
+        "npm": "project/web/ dependency management",
+    }
+    for tool_name, purpose in project_tools.items():
+        if shutil.which(tool_name):
+            print_ok(f"project: {tool_name} {term.dim(f'({purpose})')}")
+        else:
+            print_warn(f"project (missing): {tool_name} {term.dim(f'({purpose})')}")
+
+    if not os.access(repo_path("dev"), os.X_OK):
+        print_warn("`dev` is not executable; run `chmod +x dev` if needed")
+    else:
+        print_ok("`dev` is executable")
+
+    if failures:
+        print_error("doctor found missing required tooling")
+        return 1
+    print_ok("doctor passed")
+    return 0
+
+
+def cmd_status(_args: argparse.Namespace) -> int:
+    print_section("Control plane")
+    print(f"  repo root:  {REPO_ROOT}")
+    print(f"  entrypoint: ./dev")
+    print(f"  commands:   {', '.join(CORE_COMMANDS)}")
+
+    print_section("Docs")
+    for raw in ["README.md", "CONTRIBUTING.md", "project/README.md",
+                "docs/PRINCIPLES.md", "docs/CONVENTIONS.md"]:
+        path = repo_path(raw)
+        state = term.green("present") if path.exists() else term.red("missing")
+        print(f"  {raw}: {state}")
+
+    print_section("Project")
+    for raw in ["project/go", "project/web", "project/stack"]:
+        path = repo_path(raw)
+        state = term.green("present") if path.exists() else term.red("missing")
+        print(f"  {raw}: {state}")
+
+    print_section("Docker stack")
+    if shutil.which("docker"):
+        compose_dir = repo_path("project/stack")
+        proc = subprocess.run(
+            ["docker", "compose", "ps", "--format", "table {{.Name}}\t{{.Status}}\t{{.Ports}}"],
+            cwd=compose_dir,
+            capture_output=True,
+            text=True,
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            for line in proc.stdout.strip().splitlines():
+                print(f"  {line}")
+        else:
+            print(f"  {term.dim('no containers running')}")
+    else:
+        print(f"  {term.dim('docker not available')}")
+
+    print_section("Git hooks")
+    hook_path = repo_path(".githooks/pre-commit")
+    print(f"  .githooks/pre-commit: {'present' if hook_path.exists() else 'missing'}")
+    installed_hook = git_path("hooks/pre-commit")
+    print(f"  installed pre-commit: {'present' if installed_hook.exists() else 'missing'}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Stack commands
+# ---------------------------------------------------------------------------
+
+STACK_DIR = REPO_ROOT / "project" / "stack"
+STACK_PORTS = [3000]
+
+_FILES_DEV = ["compose.yml", "compose.dev.yml"]
+_FILES_PROD = ["compose.yml", "compose.prod.yml"]
+_FILES_ALL = ["compose.yml", "compose.dev.yml", "compose.prod.yml"]
+
+
+def _compose_cmd(files: list[str]) -> list[str]:
+    cmd = ["docker", "compose"]
+    for f in files:
+        cmd.extend(["-f", f])
+    return cmd
+
+
+def _ports_in_use(ports: list[int]) -> list[int]:
+    import socket
+    blocked: list[int] = []
+    for port in ports:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", port)) == 0:
+                blocked.append(port)
+    return blocked
+
+
+def _kill_containers_on_ports(ports: list[int]) -> None:
+    """Force-remove any Docker container publishing to *ports*."""
+    for port in ports:
+        proc = subprocess.run(
+            ["docker", "ps", "-q", "--filter", f"publish={port}"],
+            capture_output=True, text=True, check=False,
+        )
+        for cid in proc.stdout.strip().splitlines():
+            if not cid:
+                continue
+            print_warn(f"removing container {cid[:12]} holding port {port}")
+            subprocess.run(
+                ["docker", "rm", "-f", cid],
+                capture_output=True, check=False,
+            )
+
+
+def _require_docker() -> None:
+    if not shutil.which("docker"):
+        print_error("docker is required for stack commands")
+        print(f"  Run {term.bold('./dev doctor')} to check your tooling.")
+        raise SystemExit(1)
+
+
+def cmd_stack(args: argparse.Namespace) -> int:
+    sub = getattr(args, "stack_command", None)
+    if not sub:
+        args._parser.print_help()  # noqa: SLF001
+        return 0
+
+    t0 = time.monotonic()
+
+    if sub == "up":
+        _require_docker()
+        blocked = _ports_in_use(STACK_PORTS)
+        if blocked:
+            print_error(f"port(s) already in use: {blocked}")
+            print(f"  Run {term.bold('./dev stack reset')} to clean up orphan containers.")
+            return 1
+        prod = getattr(args, "prod", False)
+        files = _FILES_PROD if prod else _FILES_DEV
+        mode = "prod" if prod else "dev"
+        print(f"\n{term.bold(f'Starting Docker stack ({mode})...')}\n")
+        run_cmd(_compose_cmd(files) + ["up", "--build", "--remove-orphans", "-d"], cwd=STACK_DIR)
+        elapsed = time.monotonic() - t0
+        print(f"\n{term.green(term.sym_ok)} Stack is up {term.dim(f'({mode}, {elapsed:.1f}s)')}")
+        print(f"  Pulse: {term.bold('http://localhost:3000')}")
+        return 0
+
+    if sub == "down":
+        _require_docker()
+        run_cmd(_compose_cmd(_FILES_ALL) + ["down", "--remove-orphans"], cwd=STACK_DIR)
+        print_ok("stack stopped")
+        return 0
+
+    if sub == "logs":
+        _require_docker()
+        try:
+            run_cmd(_compose_cmd(_FILES_ALL) + ["logs", "-f"], cwd=STACK_DIR, check=False)
+        except KeyboardInterrupt:
+            pass
+        return 0
+
+    if sub == "status":
+        _require_docker()
+        run_cmd(_compose_cmd(_FILES_ALL) + ["ps"], cwd=STACK_DIR, check=False)
+        return 0
+
+    if sub == "reset":
+        _require_docker()
+        print(f"\n{term.bold('Resetting Docker stack to blank slate...')}\n")
+        run_cmd(
+            _compose_cmd(_FILES_ALL) + ["down", "--rmi", "all", "--volumes", "--remove-orphans"],
+            cwd=STACK_DIR,
+        )
+        _kill_containers_on_ports(STACK_PORTS)
+        still_blocked = _ports_in_use(STACK_PORTS)
+        if still_blocked:
+            print_warn(f"ports still occupied after cleanup: {still_blocked}")
+            print("  A non-Docker process may be holding the port.")
+        elapsed = time.monotonic() - t0
+        print_ok(f"stack reset complete {term.dim(f'({elapsed:.1f}s)')}")
+        print("  Containers, images, volumes, and orphans removed.")
+        print(f"  Run {term.bold('./dev stack up')} to rebuild from scratch.")
+        return 0
+
+    if sub == "dev":
+        return _stack_dev()
+
+    print_error(f"unknown stack command: {sub}")
+    return 2
+
+
+def _stack_dev() -> int:
+    for tool_name in ("go", "npm"):
+        if not shutil.which(tool_name):
+            print_error(f"{tool_name} is required for ./dev stack dev")
+            print(f"  Run {term.bold('./dev doctor')} to check your tooling.")
+            return 1
+
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(("127.0.0.1", 8080)) == 0:
+            print_error("port 8080 is already in use")
+            return 1
+
+    web_dir = repo_path("project/web")
+    go_dir = repo_path("project/go/app")
+    static_dir = str(repo_path("project/web/dist"))
+
+    if not (web_dir / "node_modules").is_dir():
+        print(f"\n{term.bold('Installing web dependencies...')}\n")
+        run_cmd(["npm", "install"], cwd=web_dir)
+
+    print(f"\n{term.bold('Building web assets...')}\n")
+    run_cmd(["npm", "run", "build"], cwd=web_dir)
+
+    print(f"{term.bold('Starting file watcher')} {term.dim('(rebuilds on change)')}")
+    vite_proc = subprocess.Popen(
+        ["npx", "vite", "build", "--watch"],
+        cwd=web_dir,
+        stdout=subprocess.DEVNULL,
+    )
+    _children.append(vite_proc)
+
+    print(f"\n{term.bold('Compiling Go server...')}\n")
+    run_cmd(["go", "build", "-o", os.devnull, "."], cwd=go_dir)
+
+    print(f"{term.bold('Starting Go server')} {term.dim('(:8080)')}")
+    print(f"\n  {term.sym_arrow} {term.bold('http://localhost:8080')}\n")
+
+    go_proc = subprocess.Popen(
+        ["go", "run", ".", "-static", static_dir],
+        cwd=go_dir,
+    )
+    _children.append(go_proc)
+
+    try:
+        go_proc.wait()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        _cleanup_children()
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Parser
+# ---------------------------------------------------------------------------
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="./dev",
+        description="Human-first control plane for the worked-example project baseline.",
+    )
+    subparsers = parser.add_subparsers(dest="command")
+
+    help_parser = subparsers.add_parser("help", help="Show control-plane help")
+    help_parser.set_defaults(func=lambda _args: (parser.print_help(), 0)[1])
+
+    setup_parser = subparsers.add_parser("setup", help="Install the clone-local pre-commit hook")
+    setup_parser.set_defaults(func=cmd_setup)
+
+    verify_parser = subparsers.add_parser("verify", help="Run baseline self-verification")
+    verify_parser.set_defaults(func=cmd_verify)
+
+    fmt_parser = subparsers.add_parser("fmt", help="Normalize lightweight text formatting")
+    fmt_parser.add_argument("--check", action="store_true", help="Report formatting drift without rewriting")
+    fmt_parser.add_argument("paths", nargs="*", help="Optional file or directory paths to scope")
+    fmt_parser.set_defaults(func=cmd_fmt)
+
+    doctor_parser = subparsers.add_parser("doctor", help="Check required local tooling")
+    doctor_parser.set_defaults(func=cmd_doctor)
+
+    status_parser = subparsers.add_parser("status", help="Show control-plane and project status")
+    status_parser.set_defaults(func=cmd_status)
+
+    stack_parser = subparsers.add_parser("stack", help="Manage the Docker stack")
+    stack_parser.set_defaults(func=cmd_stack, _parser=stack_parser)
+    stack_sub = stack_parser.add_subparsers(dest="stack_command")
+    up_parser = stack_sub.add_parser("up", help="Build and start the Docker stack")
+    up_parser.add_argument("--prod", action="store_true", help="Production mode (no file watcher)")
+    stack_sub.add_parser("down", help="Stop the Docker stack")
+    stack_sub.add_parser("logs", help="Stream Docker stack logs")
+    stack_sub.add_parser("status", help="Show running containers")
+    stack_sub.add_parser("reset", help="Remove all containers, images, and volumes")
+    stack_sub.add_parser("dev", help="Start Go + Vite dev servers on host")
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    setup_signals()
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if not args.command:
+        parser.print_help()
+        return 0
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

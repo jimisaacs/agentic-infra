@@ -1,0 +1,16 @@
+services:
+  web:
+    volumes:
+      - web-dist:/dist
+      - ../web/src:/app/src:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "test", "-f", "/dist/index.html"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  nginx:
+    depends_on:
+      web:
+        condition: service_healthy

@@ -1,0 +1,51 @@
+name: pulse
+
+x-logging: &logging
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+configs:
+  nginx_conf:
+    file: ./nginx/nginx.conf
+
+volumes:
+  web-dist:
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: stack/go/Dockerfile
+    expose:
+      - "8080"
+    restart: unless-stopped
+    stop_grace_period: 5s
+    logging: *logging
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 1s
+      timeout: 2s
+      retries: 3
+
+  web:
+    build:
+      context: ..
+      dockerfile: stack/web/Dockerfile
+    logging: *logging
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    stop_grace_period: 5s
+    logging: *logging
+    configs:
+      - source: nginx_conf
+        target: /etc/nginx/conf.d/default.conf
+    volumes:
+      - web-dist:/usr/share/nginx/html:ro
+    depends_on:
+      api:
+        condition: service_healthy

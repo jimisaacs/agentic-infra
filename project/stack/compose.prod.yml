@@ -1,0 +1,10 @@
+services:
+  web:
+    command: ["npx", "vite", "build", "--outDir", "/dist"]
+    volumes:
+      - web-dist:/dist
+
+  nginx:
+    depends_on:
+      web:
+        condition: service_completed_successfully

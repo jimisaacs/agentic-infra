@@ -1,0 +1,22 @@
+# Local Python runtimes and caches
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Local build/package output
+build/
+dist/
+*.egg-info/
+node_modules/
+
+# Local coverage and platform clutter
+.coverage
+.coverage.*
+.DS_Store
+
+# Local scratch areas
+stacking-wip/
+*.code-workspace
