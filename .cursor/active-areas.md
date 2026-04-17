@@ -1,0 +1,1 @@
+@.genai/active-areas.md

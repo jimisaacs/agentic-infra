@@ -1,6 +1,6 @@
 # Claude Code
 
-`AGENTS.md` is auto-loaded — treat it as the repo map. Rules live in `.genai/rules/`. Skills live under `.genai/skills/`.
+`AGENTS.md` is auto-loaded — treat it as the repo map. Rules live in `.genai/rules/`. Skills live under `.genai/skills/`. Workflow commands live under `.genai/commands/` as an advanced workflow layer.
 
 ## Rules
 
@@ -17,6 +17,7 @@ Load these when relevant (match by task type, not always):
 - [.genai/rules/maintenance.md](.genai/rules/maintenance.md) — when finishing changes
 - [.genai/rules/decision-records.md](.genai/rules/decision-records.md) — when changing boundaries/architecture
 - [.genai/rules/project-layout.md](.genai/rules/project-layout.md) — when working in `project/` or changing the example app layout
+- [.genai/rules/persona.md](.genai/rules/persona.md) — when doing review delivery
 
 ## Language and stack rules (auto-load)
 
@@ -33,6 +34,11 @@ Invoke when the task requires workflow depth beyond what rules provide. See [ski
 
 - `.genai/skills/git/` — Graphite stacking, worktree coordination, stack navigation
 - `.genai/skills/docs/` — doc hierarchy, walkthrough authoring, ADR workflow
+- `.genai/skills/template-maintenance/` — changing template rules, commands, top-level docs
+
+## Agents and commands
+
+Review agent definitions live in `.genai/agents/` (SSOT) with Cursor wrappers in `.cursor/agents/`. Workflow commands live in `.genai/commands/` with Cursor wrappers in `.cursor/commands/`.
 
 ## First Moves
 
@@ -50,4 +56,10 @@ Read these only when the task requires them:
 - [docs/ROADMAP.md](docs/ROADMAP.md) — what should happen next
 - [docs/decisions/README.md](docs/decisions/README.md) — open `DEC` forks and settled `ADR` choices
 - [docs/design/README.md](docs/design/README.md) — deeper architecture and rationale
+- [.genai/learnings-index.md](.genai/learnings-index.md) — choose a domain, then open only that section in `.genai/learnings.md`
 - [.genai/skills/README.md](.genai/skills/README.md) — skill index for on-demand depth
+
+Read these advanced overlays only when working on review delivery or swarm behavior:
+
+- [.genai/swarm-roster/README.md](.genai/swarm-roster/README.md)
+- [.genai/personas/README.md](.genai/personas/README.md)

@@ -4,13 +4,21 @@ Progressive-disclosure map for the cartoon delivery personas used by review swar
 
 This is an advanced optional layer. Downstream projects can keep the reviewer structure while neutralizing or removing persona delivery entirely.
 
-This file is the map, not the roster. Canonical records live under `.genai/personas/` (added in the agents-personas layer).
+This file is the map, not the roster. Canonical records live under [`.genai/personas/`](../personas/README.md).
 
 ## Scope
 
 - Review subagents use personas.
 - Reserved challenge flows may assign `shredder`.
 - The main coding agent, explore agents, shell agents, and neutral `generalPurpose` work stay flavor-free unless a command explicitly assigns a reserved persona.
+
+## Read Path
+
+1. [`.genai/personas/README.md`](../personas/README.md) - entrypoint and file map
+2. [`.genai/personas/catalog.md`](../personas/catalog.md) - compact persona-catalog metadata
+3. [`.genai/personas/roles.md`](../personas/roles.md) - routing rules and slot-machine behavior
+4. [`.genai/personas/records/<id>.md`](../personas/records/) - selected persona depth record
+5. [`.genai/personas/quickref.md`](../personas/quickref.md) - derived fallback for direct launches or tight windows
 
 ## Invariants
 

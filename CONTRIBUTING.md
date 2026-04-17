@@ -22,9 +22,10 @@ Prerequisites: `python3`, `git`, and `docker`. Optional: `snip`. Project tools s
 
 ## When You Change The Template
 
-- Rules or command behavior changed: update `README.md`, `AGENTS.md`, and any affected `.genai/rules/*.md`.
-- The control plane changed: update `dev`, `README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and any doc-contract expectations encoded in `./dev verify`.
-- The worked-example app layout changed: update `project/README.md`, `.genai/rules/project-layout.md`, and any top-level map entries that point into `project/`.
+- Rules or agent-facing behavior changed: update `README.md`, `AGENTS.md`, `CLAUDE.md`, and the affected `.genai/rules/*.md`.
+- The control plane changed: update `dev`, `README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and the affected tests.
+- The worked-example app layout changed: update `project/README.md`, `.genai/rules/project-layout.md`, and any top-level docs that point into `project/`.
+- Review delivery or persona routing changed: update `.genai/personas/` and `.genai/swarm-roster/` rather than copying logic into reviewers.
 - Architecture or load-bearing workflow changed: update `docs/decisions/` and `docs/design/` as appropriate.
 - Principles or conventions changed: update `docs/PRINCIPLES.md` or `docs/CONVENTIONS.md` and ensure consistency with the control plane.
 - Teaching story changed: update `STATUS.md` and `docs/ROADMAP.md` so the example remains coherent.

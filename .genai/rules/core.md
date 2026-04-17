@@ -24,9 +24,25 @@ Skills are on-demand workflow depth. Index: `.genai/skills/README.md`. Invoke a 
 
 Prefer `README.md`, `AGENTS.md`, and the `./dev` control plane before broad folder walks. Maps are the second layer after `AGENTS.md`.
 
-## Advanced Layers
+## Agents
 
-Review agents, slash commands, persona delivery, and swarm docs arrive in later layers of the stack. Only load those surfaces when the corresponding paths exist in this checkout.
+Review agents live in `.genai/agents/`. Treat the richer review-delivery stack as advanced context: load `.genai/swarm-roster/README.md`, `.genai/rules/persona.md`, and `.genai/personas/README.md` only when working on swarm/reviewer behavior or persona delivery.
+
+## Commands
+
+Pick by intent — don't read the full commands directory to decide:
+
+| I need to... | Command |
+| --- | --- |
+| Prove I understand before coding | `/qualify` |
+| Check quality after changes | `/verify` (fast) → `/review` (thorough) → `/tighten` (full pipeline) |
+| Find regressions | `/regressions` |
+| Clean up code | `/polish` |
+| Assess blast radius before a change | `/impact` |
+| Get expert review | `/swarm` (adaptive) or `/swarm-review` (core four reviewers) |
+| Hand off to another agent | `/handoff` |
+| Catch up on recent changes | `/catchup` |
+| Decide what to work on next | `/whatnow` |
 
 ## Local Control Plane
 

@@ -27,7 +27,18 @@ After `./dev stack up`, Pulse is at **http://localhost:3000**.
 - `.snip/` -- AI-friendly shell output filters
 - `docs/decisions/` and `docs/design/` -- governance and architecture depth
 
+## What This Layer Adds
+
+- `AGENTS.md` -- repo-wide agent guide
+- `CLAUDE.md` -- Claude Code entrypoint
+- `.genai/rules/` -- canonical rule prose (SSOT)
+- `.cursor/rules/` -- thin Cursor wrappers around the SSOT rules
+- `.claude/hooks/` -- shared guard and format-on-edit hooks
+- `.snip/` -- AI-friendly shell output filters
+- `docs/decisions/` and `docs/design/` -- governance and architecture depth
+
 ## Project Pattern
+
 
 - Start with [project/README.md](project/README.md) for the ecosystem/target layout.
 - Read [docs/PRINCIPLES.md](docs/PRINCIPLES.md) for the engineering philosophy.
@@ -39,12 +50,28 @@ After `./dev stack up`, Pulse is at **http://localhost:3000**.
 
 The repo also carries a small `project/` workspace so the infrastructure has something real to govern. Treat repo root as the agent-infra layer and `project/` as the example downstream app surface; start at `project/README.md` only when the task touches that sample app or its layout.
 
+## Advanced Path
+
+For review agents, workflow commands, persona-driven delivery, and swarm orchestration:
+
+- `.genai/commands/` — 22 workflow commands (SSOT); `.cursor/commands/` for Cursor slash commands
+- `.genai/agents/` — 7 reviewer definitions; `.cursor/agents/` for Cursor agent launch
+- `.genai/personas/` — optional review persona catalog
+- `.genai/swarm-roster/` — role model for multi-agent review
+
 ## Repo Structure
 
 | Path | Purpose |
 | ---- | ------- |
 | `.genai/rules/` | Canonical rule prose (SSOT) |
+| `.genai/commands/` | Workflow commands (SSOT) |
+| `.genai/agents/` | Reviewer definitions (SSOT) |
+| `.genai/skills/` | On-demand depth docs (SSOT) |
+| `.genai/personas/` | Review persona catalog |
+| `.genai/swarm-roster/` | Swarm role model |
 | `.cursor/rules/` | Cursor wrappers (`.mdc` frontmatter + `@` references) |
+| `.cursor/commands/` | Cursor slash command wrappers |
+| `.cursor/agents/` | Cursor agent wrappers |
 | `.claude/hooks/` | Guard, format-on-edit, and git hook scripts |
 | `.githooks/` | Thin Git hook wrappers |
 | `.snip/` | AI-friendly shell output filters |

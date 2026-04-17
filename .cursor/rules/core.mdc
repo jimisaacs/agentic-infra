@@ -11,8 +11,12 @@ alwaysApply: true
 
 Invoke via `@skill-name`. Index: [`.genai/skills/README.md`](../../.genai/skills/README.md). Language/stack conventions load automatically via glob-scoped rules.
 
-### Later Layers
+### Review Agents + MCP
 
-Review agents, slash commands, and richer MCP surfaces arrive in later layers. Use them only when the corresponding paths exist in this checkout.
+Review-delivery agents live in `.cursor/agents/`. Richer MCP surfaces arrive in later layers.
+
+### Commands
+
+Slash commands live in `.cursor/commands/`. See the **Commands** table above (from `core.md`) for intent-based lookup.
 
 Plans, when present, live in `.cursor/plans/**/*.plan.md`.
